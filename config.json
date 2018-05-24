@@ -1,0 +1,38 @@
+{
+	"title": "Palliative Care Indications GUI",
+	"text_config": {
+		"keywords_fname": "keywords.txt",
+		"text_key": "TEXT",
+		"note_key": "ROW_ID",
+		"patient_key": "HADM_ID",
+		"category_key": "CATEGORY",
+		"results_fname_suffix": "Results.csv",
+		"review_fname": "reviewed.csv"
+	},
+	"textbox_labels": [
+		"Patient and Family Care Preferences",
+		"Communication with Family",
+		"Full Code Status",
+		"Code Status Limitations",
+		"Palliative Care Team Involvement",
+		"Ambiguous"
+	],
+	"checkbox_labels": ["None"],
+	"comment_boxes": [],
+	"textbox_label_to_keypress": {
+		"Patient and Family Care Preferences": "a",
+		"Communication with Family":"s",
+		"Full Code Status":"d",
+		"Code Status Limitations":"f",
+		"Palliative Care Team Involvement":"g",
+		"Ambiguous":"e"
+	},
+	"textbox_label_to_code": {
+		"Patient and Family Care Preferences": "CAR",
+		"Communication with Family": "FAM",
+		"Full Code Status": "COD",
+		"Code Status Limitations": "LIM",
+		"Palliative Care Team Involvement": "PAL",
+		"Ambiguous": "AMB"
+	}
+}
