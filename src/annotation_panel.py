@@ -209,7 +209,7 @@ class AnnotationPanel(tk.Frame):
         return results_df
 
     def save_review_annotations(self, review_df, row_id):
-        data_labels = [self.text_config['note_key'], self.text_config['text_key'], 'LABELLED_TEXT', 'START', 'LABELS', 'ANNOTATORS', 'REVIEWER_LABELS']
+        data_labels = [self.text_config['note_key'], self.text_config['text_key'], 'LABELLED_TEXT', 'START', 'LABELS', 'ANNOTATORS', 'REVIEWER_LABELS', 'NO_LABELS']
         indicator_ints = [val.get() for val in self.indicator_values.values()]
         if sum(indicator_ints) != 0:
             clin_text = review_df[review_df[self.text_config['note_key']] == row_id][self.text_config['text_key']].values.tolist()[0]
@@ -242,7 +242,7 @@ class AnnotationPanel(tk.Frame):
                     results_dict = {}
                     results_dict[self.text_config['note_key']] = row_id
                     results_dict['TEXT'] = clin_text
-                    results_dict['REVIEWER_LABELS'] = [self.labels_to_codes[textbox_column]]
+                    results_dict['REVIEWER_LABELS'] = [str(self.labels_to_codes[textbox_column])]
                     # Check that the text is actually in the clinical note (prevent copy errors)
                     start_index = results_dict['TEXT'].find(annotation_text)
 
@@ -252,6 +252,7 @@ class AnnotationPanel(tk.Frame):
 
                     results_dict['LABELLED_TEXT'] = annotation_text.strip()
                     results_dict['START'] = int(char_start)
+                    results_dict['NO_LABELS'] = 0
                     results_list.append(results_dict)
 
         results_df = pd.DataFrame(results_list, columns=data_labels, index=arange(len(results_list)))
@@ -267,11 +268,3 @@ class AnnotationPanel(tk.Frame):
         for machine in self.textbox_labels + self.checkbox_labels:
             self.indicator_values[machine].set(0)
 
-    def _clean_text(self, text):
-        if type(text) == float:
-            return text
-        cleaned = str(text.replace('\r\r', '\n').replace('\r', ''))
-        cleaned = re.sub(r'\n+', '\n', cleaned)
-        cleaned = re.sub(r' +', ' ', cleaned)
-        cleaned = re.sub(r'\t', ' ', cleaned)
-        return str(cleaned.strip())

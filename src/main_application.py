@@ -84,6 +84,12 @@ class MainApplication(tk.Frame):
         cleaned = re.sub(r'\t', ' ', cleaned)
         return str(cleaned.strip())
 
+    def _clean_text2(self, text):
+        if type(text) == float:
+            return text
+        cleaned = str(text.replace('\r\r', '\n').replace('\r', '\n'))
+        return str(cleaned.strip())
+
     # Opening file functions
     def openfile(self):
         if self.file is not None:
@@ -167,7 +173,7 @@ class MainApplication(tk.Frame):
 
         for fname in comparison_files:
             df = pd.read_csv(fname, index_col=0, header=0)
-            df[self.text_config['text_key']] = df[self.text_config['text_key']].map(lambda text: self._clean_text(text))
+            df[self.text_config['text_key']] = df[self.text_config['text_key']].map(lambda text: self._clean_text2(text))
             comparison_dfs.append(df)
 
         for df in comparison_dfs:
@@ -185,7 +191,7 @@ class MainApplication(tk.Frame):
                 reviewer_dicts += self.create_review_dict_for_note(row_id, comparison_dfs)
             self.review_df = pd.DataFrame(reviewer_dicts)
             self.review_df.index = np.arange(self.review_df.shape[0])
-            self.review_df = self.review_df[[self.text_config['note_key'], self.text_config['text_key'], 'LABELLED_TEXT', 'START', 'LABELS', 'ANNOTATORS', 'REVIEWER_LABELS']]
+            self.review_df = self.review_df[[self.text_config['note_key'], self.text_config['text_key'], 'LABELLED_TEXT', 'START', 'LABELS', 'ANNOTATORS', 'REVIEWER_LABELS', 'NO_LABELS']]
             self.review_df['REVIEWER_LABELS'] = self.review_df['REVIEWER_LABELS'].astype(object)
             self.review_df.to_csv(self.review_fname)
         # Navigate to first note (change_review_note)
@@ -244,6 +250,7 @@ class MainApplication(tk.Frame):
                 if current_note_text:
                     assert row[self.text_config['text_key']] == current_note_text
                 current_note_text = row[self.text_config['text_key']]
+
                 text_start = int(row['START'])
                 text_end = int(row['START'] + len(row['LABELLED_TEXT']))
                 current_label = row['LABEL']
@@ -270,9 +277,29 @@ class MainApplication(tk.Frame):
             'START': interval[0],
             'LABELS': labels,
             'ANNOTATORS': annotators,
-            'REVIEWER_LABELS': None
+            'REVIEWER_LABELS': None,
+            'NO_LABELS': 0
             }
             reviewer_dicts.append(reviewer_dict)
+
+        if len(reviewer_dicts) == 0:
+            current_results_df = df[(df[self.text_config['note_key']] == current_note_id) & (df['NO_LABELS'] == 1)]
+            for j, row in current_results_df.iterrows():
+                if current_note_text:
+                    assert row[self.text_config['text_key']] == current_note_text
+                current_note_text = row[self.text_config['text_key']]
+            reviewer_dict = {
+            self.text_config['note_key']: current_note_id,
+            self.text_config['text_key']: current_note_text,
+            'LABELLED_TEXT': None,
+            'START': None,
+            'LABELS': None,
+            'ANNOTATORS': None,
+            'REVIEWER_LABELS': None,
+            'NO_LABELS': 1
+            } 
+            reviewer_dicts.append(reviewer_dict)
+
         return reviewer_dicts
 
     # Creates items displayed in the notes panel. Adds highlights if in comparison mode.
@@ -575,8 +602,8 @@ class MainApplication(tk.Frame):
         current_review_df = self.review_df[self.review_df[self.text_config['note_key']] == self.current_results_id]
         self.review_tag_label_dict = self.get_review_tag_label_dict(current_review_df)
         for tag_start, tag_data in self.review_tag_label_dict.iteritems():
-            pos_start = '{}+{}c'.format(start, tag_data.start)
-            pos_end = '{}+{}c'.format(start, tag_data.end)
+            pos_start = '{}+{}c'.format(start, int(tag_data.start))
+            pos_end = '{}+{}c'.format(start, int(tag_data.end))
 
             if tag_data.reviewer_labels and type(tag_data.reviewer_labels) != float:
                 self.pttext.tag_add('reviewed', pos_start, pos_end)
@@ -642,11 +669,12 @@ class MainApplication(tk.Frame):
     def get_review_tag_label_dict(self, current_review_df):
         review_tag_label_dict = {}
         for i, row in current_review_df.iterrows():
-            annotators = row['ANNOTATORS']
-            labels = row['LABELS']
-            reviewer_labels = row['REVIEWER_LABELS']
-            review_tag_label_dict[row['START']] = \
-            ReviewTagData(row['START'], row['START'] + len(row['LABELLED_TEXT']), row['LABELLED_TEXT'], annotators, labels, reviewer_labels)
+            if row['NO_LABELS'] != 1:
+                annotators = row['ANNOTATORS']
+                labels = row['LABELS']
+                reviewer_labels = row['REVIEWER_LABELS']
+                review_tag_label_dict[row['START']] = \
+                ReviewTagData(row['START'], row['START'] + len(row['LABELLED_TEXT']), row['LABELLED_TEXT'], annotators, labels, reviewer_labels)
         return review_tag_label_dict
 
     def retrieve_label_groups(self, phrases_dict):
